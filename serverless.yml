@@ -1,0 +1,77 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: portfolio-risk-api
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+frameworkVersion: '3'
+
+
+provider:
+  name: aws
+  runtime: python3.10
+  region: us-east-1
+  httpApi:
+    cors: true
+  environment:
+    ALPHA_VANTAGE_API_KEY: ${env:ALPHA_VANTAGE_API_KEY}
+    PRICE_TABLE_NAME: price_snapshots
+
+  iam:
+    role:
+      statements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:Query
+        Resource:
+          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/price_snapshots
+
+plugins:
+  - serverless-python-requirements
+
+functions:
+  collectPriceData:
+    handler: src/handlers/collect_price_data.handler
+    events:
+      - httpApi:
+          path: /prices/collect
+          method: post
+  getPrices:
+    handler: src/handlers/get_prices.handler
+    events:
+      - httpApi:
+          path: /prices
+          method: get
+
+resources:
+  Resources:
+    PriceSnapshotsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: price_snapshots
+        AttributeDefinitions:
+          - AttributeName: ticker
+            AttributeType: S
+          - AttributeName: date
+            AttributeType: S
+        KeySchema:
+          - AttributeName: ticker
+            KeyType: HASH
+          - AttributeName: date
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
