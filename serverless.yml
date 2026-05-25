@@ -34,15 +34,18 @@ provider:
   iam:
     role:
       statements:
-      - Effect: Allow
-        Action:
-          - dynamodb:PutItem
-          - dynamodb:Query
-        Resource:
-          - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/price_snapshots
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/price_snapshots
+            - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/company_overviews
 
 plugins:
   - serverless-python-requirements
+  - serverless-dotenv-plugin
 
 functions:
   collectPriceData:
@@ -56,6 +59,12 @@ functions:
     events:
       - httpApi:
           path: /prices
+          method: get
+  getCompanyOverview:
+    handler: src/handlers/get_company_overview.handler
+    events:
+      - httpApi:
+          path: /company/overview
           method: get
 
 resources:
@@ -74,4 +83,15 @@ resources:
             KeyType: HASH
           - AttributeName: date
             KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+    CompanyOverviewsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: company_overviews
+        AttributeDefinitions:
+          - AttributeName: ticker
+            AttributeType: S
+        KeySchema:
+          - AttributeName: ticker
+            KeyType: HASH
         BillingMode: PAY_PER_REQUEST
