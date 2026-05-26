@@ -39,6 +39,7 @@ provider:
             - dynamodb:PutItem
             - dynamodb:GetItem
             - dynamodb:Query
+            - dynamodb:BatchWriteItem
           Resource:
             - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/price_snapshots
             - arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/company_overviews

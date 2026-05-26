@@ -1,6 +1,12 @@
 import json
 from decimal import Decimal
-from src.repositories.price_repository import get_prices_by_ticker
+from datetime import datetime, timedelta
+
+from src.services.market_data_client import fetch_daily_prices, MarketDataError
+from src.repositories.price_repository import (
+    get_prices_by_ticker,
+    save_missing_prices,
+)
 
 
 def decimal_default(obj):
@@ -21,19 +27,66 @@ def response(status_code, body):
     }
 
 
-def handler(event, context):
-    print("EVENT:", json.dumps(event))
+def is_data_fresh(existing_prices: list[dict]) -> bool:
+    if not existing_prices:
+        return False
 
+    latest_cached_date = datetime.strptime(
+        existing_prices[0]["date"],
+        "%Y-%m-%d"
+    )
+
+    now = datetime.utcnow()
+
+    # Monday-Friday: only treat as fresh if latest cached price is today.
+    if now.weekday() < 5:
+        return latest_cached_date.date() == now.date()
+
+    # Weekend: Friday's data should still count as fresh.
+    return (now - latest_cached_date) < timedelta(days=3)
+
+
+def handler(event, context):
     params = event.get("queryStringParameters") or {}
     ticker = params.get("ticker")
 
     if not ticker:
-        return response(400, {"error": "ticker is required", "params": params})
+        return response(400, {"error": "ticker is required"})
 
-    prices = get_prices_by_ticker(ticker)
+    ticker = ticker.upper()
 
-    return response(200, {
-        "ticker": ticker.upper(),
-        "count": len(prices),
-        "prices": prices,
-    })
+    try:
+        existing_prices = get_prices_by_ticker(ticker)
+        existing_dates = {p["date"] for p in existing_prices}
+
+        if is_data_fresh(existing_prices):
+            return response(200, {
+                "ticker": ticker,
+                "count": len(existing_prices),
+                "source": "cache",
+                "new_records_saved": 0,
+                "prices": existing_prices,
+            })
+
+        fresh_prices = fetch_daily_prices(ticker)
+
+        saved_count = save_missing_prices(fresh_prices, existing_dates)
+
+        final_prices = get_prices_by_ticker(ticker)
+
+        return response(200, {
+            "ticker": ticker,
+            "count": len(final_prices),
+            "source": "api",
+            "new_records_saved": saved_count,
+            "prices": final_prices,
+        })
+
+    except MarketDataError as e:
+        # print("ALPHA VANTAGE RESPONSE:", data)
+        print("GET PRICES ERROR:", str(e))
+        return response(400, {"error": str(e)})
+
+    except Exception as e:
+        print("GET PRICES ERROR:", str(e))
+        return response(500, {"error": "Failed to get prices"})
