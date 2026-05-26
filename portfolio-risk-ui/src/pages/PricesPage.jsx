@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PriceVolumeChart from "../components/PriceVolumeChart";
 import CompanyOverviewCard from "../components/CompanyOverviewCard";
+import { getWatchlist, addToWatchlist, removeFromWatchlist } from "../utils/watchlist";
 
 const API_URL = "https://pnclgqyuw1.execute-api.us-east-1.amazonaws.com";
 
@@ -9,6 +10,11 @@ export default function PricesPage() {
     const [prices, setPrices] = useState([]);
     const [message, setMessage] = useState("");
     const [overview, setOverview] = useState(null);
+    const [watchlist, setWatchlist] = useState([]);
+
+    useEffect(() => {
+        setWatchlist(getWatchlist());
+    }, []);
 
     async function collectPrices() {
         setMessage("Collecting prices...");
@@ -38,6 +44,9 @@ export default function PricesPage() {
         setOverview(overviewData);
 
         setMessage(`Loaded ${pricesData.count || 0} prices for ${ticker}`);
+
+        const updated = addToWatchlist(ticker);
+        setWatchlist(updated);
     }
 
     return (
@@ -55,6 +64,28 @@ export default function PricesPage() {
 
             <p>{message}</p>
             <CompanyOverviewCard overview={overview} />
+            <div style={{ marginTop: "1.5rem" }}>
+                <h3>Watchlist</h3>
+
+                {watchlist.length === 0 && <p>No tickers yet</p>}
+
+                {watchlist.map((t) => (
+                    <button
+                        key={t}
+                        onClick={() => setTicker(t)}
+                        style={{
+                            marginRight: "0.5rem",
+                            marginBottom: "0.5rem",
+                            padding: "0.4rem 0.7rem",
+                            borderRadius: "8px",
+                            border: "1px solid #ccc",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {t}
+                    </button>
+                ))}
+            </div>
             <PriceVolumeChart prices={prices} ticker={ticker} />
         </>
     );
