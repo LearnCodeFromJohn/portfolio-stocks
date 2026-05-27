@@ -23,7 +23,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: python3.10
+  runtime: python3.11
   region: us-east-1
   httpApi:
     cors: true
