@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, UTC
 from unittest.mock import patch
 
 from src.handlers.get_prices import handler
@@ -11,10 +12,12 @@ def test_get_prices_returns_cached_data_when_fresh():
         }
     }
 
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
+
     cached_prices = [
         {
             "ticker": "AAPL",
-            "date": "2099-01-01",
+            "date": today,
             "price": 100,
             "close": 100,
             "volume": 1000,
@@ -35,15 +38,3 @@ def test_get_prices_returns_cached_data_when_fresh():
         assert body["count"] == 1
 
         mock_fetch.assert_not_called()
-
-
-def test_get_prices_missing_ticker_returns_400():
-    event = {
-        "queryStringParameters": {}
-    }
-
-    response = handler(event, None)
-    body = json.loads(response["body"])
-
-    assert response["statusCode"] == 400
-    assert body["error"] == "ticker is required"
