@@ -24,7 +24,7 @@ def response(status_code, body):
             "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
         },
         "body": json.dumps(body, default=decimal_default),
-    }
+    } 
 
 
 def is_data_fresh(existing_prices: list[dict]) -> bool:
