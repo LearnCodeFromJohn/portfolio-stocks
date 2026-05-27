@@ -13,10 +13,6 @@ jobs:
     env:
       AWS_DEFAULT_REGION: us-east-1
 
-    defaults:
-      run:
-        working-directory: .
-
     steps:
       - uses: actions/checkout@v4
 
@@ -26,11 +22,12 @@ jobs:
 
       - name: Install Python dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest
 
       - name: Run backend tests
-        run: pytest
+        run: python -m pytest
 
   deploy:
     needs: test
@@ -39,6 +36,9 @@ jobs:
 
     env:
       AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -51,12 +51,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Serverless Framework
+        run: npm install -g serverless@3.40.0
 
       - name: Deploy Serverless backend
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
-        run: npx serverless deploy --stage dev
+        run: serverless deploy --stage dev
