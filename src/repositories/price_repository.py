@@ -3,7 +3,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(os.environ.get("PRICE_TABLE_NAME", "price_snapshots"))
+table = dynamodb = boto3.resource("dynamodb", region_name=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
 
 
 def get_prices_by_ticker(ticker: str, limit: int = 5000) -> list[dict]:

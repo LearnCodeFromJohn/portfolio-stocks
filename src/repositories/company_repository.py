@@ -3,7 +3,7 @@ import boto3
 from datetime import datetime, timezone
 
 dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(os.environ.get("COMPANY_OVERVIEWS_TABLE", "company_overviews"))
+table = dynamodb = boto3.resource("dynamodb", region_name=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
 
 
 def get_company_overview(ticker: str) -> dict | None:
