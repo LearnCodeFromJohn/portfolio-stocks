@@ -57,6 +57,13 @@ functions:
       - httpApi:
           path: /company/overview
           method: get
+  
+  getRiskReport:
+    handler: src/handlers/get_risk_report.handler
+    events:
+      - httpApi:
+          path: /risk/report
+          method: get
 
 resources:
   Resources:
